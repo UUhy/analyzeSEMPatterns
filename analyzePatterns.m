@@ -1082,13 +1082,15 @@ classdef analyzePatterns
             end
             
             if obj.showPlot
-                y = da/range(da)-mean(da/range(da));        %normalize and center
+                range_da = max(da)-min(da);
+                y = da/range_da-mean(da/range_da);          %normalize and center
                 ya = abs(y);                                %absolute value
                 t = ones(size(y))*max(ya)*threshold;
                 
                 y = y*size(obj.I,1)/3+size(obj.I,1)/3;
                 ya = ya*size(obj.I,1)/3+size(obj.I,1)/3*2;
                 t = t*size(obj.I,1)/3+size(obj.I,1)/3*2;
+                
                 figure
                 colormap(gray)
                 imagesc(obj.I)
