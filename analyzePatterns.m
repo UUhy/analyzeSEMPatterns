@@ -168,7 +168,7 @@ classdef analyzePatterns
             
         end
         
-        function obj = loadImage(obj, filename)
+        function obj = loadImage(obj, filename, varargin)
         %obj = loadImage(obj, filename)
         %
         %   Output:
@@ -177,15 +177,22 @@ classdef analyzePatterns
         %   Input:
         %       obj         :   class instance
         %       filename    :   string  =   name of image file
+        %       channel     :   integer =   color channel for non-grayscale
+        %                                   images
         %
         %   Description:
-        %   Loads and image from a file.  Only grayscale images are
-        %   acceptable.
-            
+        %   Loads and image from a file.  This function assumes the image
+        %   is grayscale or contains only a single color channel. Images
+        %   with multiple color channels such as rgb, will be loaded using
+        %   channel 1 (red) unless specified.
+            channel = 1;
+            if nargin >= 3
+                channel = varargin{1};
+            end
             obj.Iraw = imread(filename);
             obj.I = obj.Iraw;
             if size(obj.Iraw,3) > 1
-                error('loadImage():  The image needs to be a grayscale image');
+                obj.I = obj.Iraw(:,:,channel);
             end
         end
         
@@ -411,6 +418,66 @@ classdef analyzePatterns
             end
         end
         
+        function obj = thresholdFilter(obj, varargin)
+        %obj = atfFilter(obj, threshold = .5)
+        %
+        %   Output:
+        %       obj         :   class instance
+        %
+        %   Input:
+        %       obj         :   class instance
+        %       threshold  :   double (0 to 1) =   threshold value
+        %
+        %   Description:
+        %   Sets any pixel in the image that is below the threshold to
+        %   zero.
+        %       threshold = (maxPixelValue - minPixelValue)*threshold
+        %
+        %
+        %   showPlot:
+        %   Shows the filtered image
+        
+            threshold = 0.5;
+            if nargin > 1
+                threshold = varargin{1};
+            end
+            obj.I = obj.IPK.threshold(obj.I, threshold);
+            
+            if obj.showPlot
+                figure
+                colormap(gray)
+                imagesc(obj.I)
+                title('Image processed by thresholdFilter');
+            end
+        end
+        
+        function obj = inverseFilter(obj)
+        %obj = atfFilter(obj)
+        %
+        %   Output:
+        %       obj         :   class instance
+        %
+        %   Input:
+        %       obj         :   class instance
+        %
+        %   Description:
+        %   Invert the image
+        %
+        %
+        %   showPlot:
+        %   Shows the filtered image
+        
+
+            obj.I = -obj.I;
+            
+            if obj.showPlot
+                figure
+                colormap(gray)
+                imagesc(obj.I)
+                title('Image processed by thresholdFilter');
+            end
+        end
+        
         function obj = findCenter(obj, varargin)
         %obj = findCenter(obj, blur = radius, threshold = 0.5, noiseBlur = 6, noiseThreshold = 0.5)
         %
@@ -446,7 +513,7 @@ classdef analyzePatterns
             noiseThreshold = 0.5;
             
             if nargin > 1
-                blur = varargin{1};
+                blur = varargin{1}*obj.scale;
             end
             if nargin > 2
                 threshold = varargin{2};
@@ -576,6 +643,7 @@ classdef analyzePatterns
         %   fn = 'Square_100nm_100kX.tif';      %filename in current directory
         %   r = 50;                             %expected radius [nm]
         %   pitch = 200;                        %expected pitch [nm]
+        %   scale = 500/168;                    %[nm/pixel]
         % 
         %   c = analyzePatterns();
         %   c = c.setScale(scale);
@@ -588,7 +656,7 @@ classdef analyzePatterns
         %   c = c.atfFilter(6);
         %   c = c.findCenter();
         %   c = c.isolateDots();
-        %   c.getEllipse(1);
+        %   c.getEllipse(2);
         %
         %   See also setShowPlot, cropImage, atfFilter, findCenter,
         %   isolateDots, rotateImage, alignX, setImage, removeData
@@ -629,8 +697,8 @@ classdef analyzePatterns
                 hold off
                 title(['Mean('  num2str(mean(obj.pEllipse(:,8,type))*obj.scale) ')  Spread(' num2str(std(obj.pEllipse(:,8,type))*obj.scale) ')']);
                 
-                disp(['Mean Diameter = ' num2str(mean(obj.pEllipse(:,8,type))*obj.scale) ' [nm]'])
-                disp(['Std Diameter = ' num2str(std(obj.pEllipse(:,8,type))*obj.scale) ' [nm]'])
+                disp(['Mean Diameter = ' num2str(mean(obj.pEllipse(:,8,type))*obj.scale)])
+                disp(['Std Diameter = ' num2str(std(obj.pEllipse(:,8,type))*obj.scale)])
             end
         end
         
